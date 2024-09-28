@@ -14,6 +14,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.threadqa.Main;
+import org.threadqa.models.Cart;
+import org.threadqa.models.CartProduct;
 import org.threadqa.models.Product;
 import org.threadqa.models.Rating;
 
@@ -75,6 +77,41 @@ public class WireMockTests {
                 .expectBody().json("{\"count\" : 10}");
     }
 
+    @Test
+    public void testCartsSizeIsEmpty() {
+        wireMockExtension.stubFor(
+                WireMock.get("/carts")
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                                .withBody("[]"))
+        );
+
+        webTestClient.get().uri("/api/carts/count")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody().json("{\"count\" : 0}");
+    }
+
+    @SneakyThrows
+    @Test
+    public void testCartsSizeIsNotEmpty(){
+        List<Cart> carts = generateCarts(10);
+        String jsonCarts = mapper.writeValueAsString(carts);
+        System.out.println(jsonCarts);
+
+        wireMockExtension.stubFor(
+                WireMock.get("/carts")
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                                .withBody(jsonCarts))
+        );
+
+        webTestClient.get().uri("/api/carts/count")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody().json("{\"count\" : 10}");
+    }
+
     private List<Product> generateProducts(int count) {
         Random random = new Random();
         List<Product> products = new ArrayList<>();
@@ -95,5 +132,32 @@ public class WireMockTests {
             products.add(temp);
         }
         return products;
+    }
+
+    private List<Cart> generateCarts(int count){
+        Random random = new Random();
+        List<Cart> carts = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+
+            List<CartProduct> cartProduct = new ArrayList<>();
+            for (int j = 0; j < random.nextInt(5); j++) {
+                cartProduct.add(CartProduct.builder()
+                        .productId(random.nextInt(5))
+                        .quantity(random.nextInt(50))
+                        .build());
+            }
+
+            Cart temp = Cart.builder()
+                    .id(i)
+                    .userId(random.nextInt(1000))
+                    .date("2024-03-02T00:00:00.000Z")
+                    .description("some text")
+                    .cartProduct(cartProduct)
+                    .__v(random.nextInt(10))
+                    .build();
+
+            carts.add(temp);
+        }
+        return carts;
     }
 }
