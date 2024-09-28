@@ -97,6 +97,7 @@ public class WireMockTests {
     public void testCartsSizeIsNotEmpty(){
         List<Cart> carts = generateCarts(10);
         String jsonCarts = mapper.writeValueAsString(carts);
+        System.out.println(jsonCarts);
 
         wireMockExtension.stubFor(
                 WireMock.get("/carts")
